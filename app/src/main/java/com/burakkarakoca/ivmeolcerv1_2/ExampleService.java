@@ -12,20 +12,23 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.media.Ringtone;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import static com.burakkarakoca.ivmeolcerv1_2.App.CHANNEL_ID;
 
 public class ExampleService extends Service implements SensorEventListener {
 
-    long lastUpdate;
+    long lastUpdate,lastUpdate2;
     float last_x, last_y, last_z = 0;
     float delta_x, delta_y, delta_z = 0;
     public static boolean readVal = false;
@@ -39,10 +42,10 @@ public class ExampleService extends Service implements SensorEventListener {
     @Override
     public void onCreate() {
         Uri alarm = MainActivity.getAlert();
-        r = RingtoneManager.getRingtone(getApplicationContext(), alarm);
+//        r = RingtoneManager.getRingtone(getApplicationContext(), alarm);
         mp = MediaPlayer.create(getApplicationContext(), alarm);
-        super.onCreate();
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        super.onCreate();
 
     }
 
@@ -86,21 +89,20 @@ public class ExampleService extends Service implements SensorEventListener {
     CountDownTimer countDownTimer = new CountDownTimer((MainActivity.baslatmaSuresi+2)*1000,1000) {
         @Override
         public void onTick(long millisUntilFinished) {
-            if(!MainActivity.durdurClicked){
-                if(millisUntilFinished/1000 + 1 < 3){
-                    readVal = true;
-                    System.out.println("Çalışıyor");
-                    MainActivity.durdurButon.setText("Durdur");
-                    MainActivity.calisiyorText.setText("Çalışıyor");
-                    MainActivity.calisiyorText.setTextColor(Color.parseColor("#00FF00"));
-                    MainActivity.durdurClicked = true;
-                } else{
-                    MainActivity.durdurButon.setText("Durdur (" + ((millisUntilFinished / 1000) -1) +")");
-                    System.out.println("Durdur ("+(millisUntilFinished/1000 - 1)+")");
-                }
-            } else if(MainActivity.durdurClicked){
-                countDownTimer.cancel();
+
+            if (millisUntilFinished / 1000 + 1 < 3) {
+                readVal = true;
+                System.out.println("Çalışıyor");
+                MainActivity.durdurButon.setText("Durdur");
+                MainActivity.calisiyorText.setText("Çalışıyor");
+                MainActivity.calisiyorText.setTextColor(Color.parseColor("#00FF00"));
+                MainActivity.durdurClicked = true;
+            } else {
+                MainActivity.durdurButon.setText("Durdur (" + ((millisUntilFinished / 1000) - 1) + ")");
+                System.out.println("Durdur (" + (millisUntilFinished / 1000 - 1) + ")");
             }
+
+
         }
 
         @Override
@@ -110,15 +112,23 @@ public class ExampleService extends Service implements SensorEventListener {
 
     }.start();
 
-
     @Override
     public void onSensorChanged(SensorEvent event) {
 
-        if(readVal){
-            long curTime = System.currentTimeMillis();
+        if(MainActivity.durdurClicked){
+            countDownTimer.cancel();
+            MainActivity.durdurButon.setText("Durdur");
+        }
 
-            if ((curTime - lastUpdate) > 50) {
-                lastUpdate = curTime;
+
+        long curTime = System.currentTimeMillis();
+        long curTime2 = System.currentTimeMillis();
+
+        if((curTime - lastUpdate) > 100){
+            lastUpdate = curTime;
+//          writeToFile("X:"+event.values[0]+"Y:"+event.values[1]+"Z:"+event.values[2],getApplicationContext());
+
+            if (readVal) {
 
                 delta_x = Math.abs(last_x - event.values[0]);
                 delta_y = Math.abs(last_y - event.values[1]);
@@ -159,6 +169,11 @@ public class ExampleService extends Service implements SensorEventListener {
 
         }
 
+//        if((curTime2 - lastUpdate2) > 500) {
+//            lastUpdate2 = curTime2;
+//            writeToFile("X:" + event.values[0] + "Y:" + event.values[1] + "Z:" + event.values[2], getApplicationContext());
+//        }
+
         last_x = event.values[0];
         last_y = event.values[1];
         last_z = event.values[2];
@@ -180,6 +195,18 @@ public class ExampleService extends Service implements SensorEventListener {
     }
 
 
+    private void writeToFile(String data,Context context) {
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput("config.txt", Context.MODE_PRIVATE));
+            outputStreamWriter.write(data);
+            outputStreamWriter.close();
+            System.out.println("writed");
+        }
+        catch (IOException e) {
+            Log.e("Exception", "File write failed: " + e.toString());
+        }
+
+    }
 
 
 

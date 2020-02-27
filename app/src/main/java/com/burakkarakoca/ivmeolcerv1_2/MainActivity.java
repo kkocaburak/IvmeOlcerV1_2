@@ -3,6 +3,7 @@ package com.burakkarakoca.ivmeolcerv1_2;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -28,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
     public static int hassasiyetValue, baslatmaSuresi;
     String hassasiyetValueString;
     SharedPreferences pref;
+
+    MediaPlayer emptySound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,9 +106,18 @@ public class MainActivity extends AppCompatActivity {
 
         Intent serviceIntent = new Intent(this, ExampleService.class);
         ContextCompat.startForegroundService(this, serviceIntent);
+
+        if(emptySound == null){
+            emptySound = MediaPlayer.create(this,R.raw.silence);
+        }
+
+        emptySound.start();
+        emptySound.setLooping(true);
+
     }
 
     public void stopService(View v) {
+        durdurClicked = true;
         baslatButon.setVisibility(View.VISIBLE);
         durdurButon.setVisibility(View.INVISIBLE);
 
@@ -116,13 +128,18 @@ public class MainActivity extends AppCompatActivity {
 
         ExampleService.readVal = false;
         ExampleService.alarmIsPlaying = false;
-        durdurClicked = true;
 
         degisimText.setText("X : " + " \n\nY : " + "\n\nZ : ");
 
         if(ExampleService.mp.isPlaying()){
             ExampleService.mp.pause();
             ExampleService.mp.seekTo(0);
+        }
+
+        if(emptySound.isLooping()){
+            emptySound.setLooping(false);
+            emptySound.pause();
+            emptySound.seekTo(0);
         }
 
         Intent serviceIntent = new Intent(this, ExampleService.class);
@@ -171,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static Uri getAlert() {
 
-        Uri alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        Uri alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
 
         if (alert == null) {
             Log.e("alertval", "alert null");
@@ -190,7 +207,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-//    @Override
+    @Override
+    protected void onDestroy() {
+        stopService(durdurButon);
+        super.onDestroy();
+    }
+
+    //    @Override
 //    protected void onPause() {
 //        super.onPause();
 //        ExampleService.arkaplanModu = true;
